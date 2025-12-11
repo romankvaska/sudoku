@@ -21,6 +21,9 @@ export interface GameState {
   solved: boolean;
   createdAt: Date;
   updatedAt: Date;
+  incorrectAttempts: number;
+  penaltyTime: number;
+  hintsUsed: number;
 }
 
 export interface GameHistory {
@@ -30,6 +33,9 @@ export interface GameHistory {
   solved: boolean;
   createdAt: Date;
   puzzleHash?: string;
+  incorrectAttempts?: number;
+  hintsUsed?: number;
+  penaltyTime?: number;
 }
 
 export interface Tournament {

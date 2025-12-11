@@ -26,29 +26,42 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Difficulty Selection */}
+      {/* Difficulty Selection Bar */}
       <section className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Choose Difficulty Level</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {difficulties.map(({ level, description, time }) => (
-            <Link
-              key={level}
-              href={`/game?difficulty=${level}`}
-              className="group p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500"
-            >
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
-                  {level}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {description}
-                </p>
-                <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                  {time}
-                </p>
-              </div>
-            </Link>
-          ))}
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Start Playing</h2>
+        <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex gap-2 flex-1">
+            {difficulties.map(({ level, time }) => (
+              <button
+                key={level}
+                onClick={() => setSelectedDifficulty(level)}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                  selectedDifficulty === level
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                } capitalize text-sm`}
+              >
+                <div className="font-semibold">{level}</div>
+                <div className="text-xs opacity-75">{time}</div>
+              </button>
+            ))}
+          </div>
+          
+          <Link
+            href={selectedDifficulty ? `/game?difficulty=${selectedDifficulty}` : '#'}
+            onClick={(e) => {
+              if (!selectedDifficulty) {
+                e.preventDefault();
+              }
+            }}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              selectedDifficulty
+                ? 'bg-green-600 hover:bg-green-700 text-white shadow-md cursor-pointer'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Play
+          </Link>
         </div>
       </section>
 

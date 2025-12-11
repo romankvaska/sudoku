@@ -13,7 +13,7 @@ export default function GameContent() {
   const router = useRouter();
   const difficulty = (searchParams.get('difficulty') as Difficulty) || 'easy';
 
-  const { currentGame, startNewGame, setCell, clearCell, pauseGame, resumeFromPause, abandonGame, getHint } = useGameStore();
+  const { currentGame, startNewGame, setCell, clearCell, abandonGame, getHint } = useGameStore();
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
@@ -29,13 +29,17 @@ export default function GameContent() {
     if (currentGame?.status === 'completed' && currentGame.solved) {
       setShowCompletionModal(true);
 
-      // Auto-save to database
+      // Auto-save to database with total time including penalties
+      const totalSolveTime = currentGame.elapsedTime + currentGame.penaltyTime;
       saveGame({
         id: currentGame.id,
         difficulty: currentGame.difficulty,
-        solveTime: currentGame.elapsedTime,
+        solveTime: totalSolveTime,
         solved: true,
         createdAt: currentGame.createdAt,
+        incorrectAttempts: currentGame.incorrectAttempts,
+        hintsUsed: currentGame.hintsUsed,
+        penaltyTime: currentGame.penaltyTime,
       }).catch(console.error);
     }
   }, [currentGame?.status, currentGame?.solved]);
@@ -60,13 +64,7 @@ export default function GameContent() {
     }
   };
 
-  const handlePauseResume = () => {
-    if (currentGame.status === 'playing') {
-      pauseGame();
-    } else if (currentGame.status === 'paused') {
-      resumeFromPause();
-    }
-  };
+
 
   const handleAbandon = () => {
     if (confirm('Are you sure you want to abandon this game?')) {
@@ -108,63 +106,85 @@ export default function GameContent() {
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Elapsed Time</p>
           </div>
         </div>
-
-        {/* Status */}
-        <div className="flex items-center gap-2 text-sm">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-              currentGame.status === 'playing'
-                ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                : currentGame.status === 'paused'
-                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                  : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-            }`}
-          >
-            {currentGame.status}
-          </span>
-        </div>
       </div>
 
-      {/* Game Board */}
-      <GameBoard
-        board={currentGame.board}
-        puzzle={currentGame.puzzle}
-        selectedCell={selectedCell}
-        onCellSelect={handleCellSelect}
-        onCellChange={handleCellChange}
-      />
+      {/* Main Game Area with Board and Stats */}
+      <div className="flex gap-16 justify-between items-stretch px-4">
+        {/* Center: Game Board with Controls */}
+        <div className="flex-1 flex flex-col items-center justify-start h-full">
+          <GameBoard
+            board={currentGame.board}
+            puzzle={currentGame.puzzle}
+            solution={currentGame.solution}
+            selectedCell={selectedCell}
+            onCellSelect={handleCellSelect}
+            onCellChange={handleCellChange}
+          />
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-4 justify-center">
-        <button
-          onClick={handlePauseResume}
-          disabled={currentGame.status === 'completed'}
-          className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
-        >
-          {currentGame.status === 'playing' ? 'Pause' : 'Resume'}
-        </button>
+          {/* Controls Below Board */}
+          <div className="flex flex-wrap gap-4 justify-center mt-6">
+            <button
+              onClick={getHint}
+              disabled={currentGame.status !== 'playing'}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+            >
+              Get Hint
+            </button>
 
-        <button
-          onClick={getHint}
-          disabled={currentGame.status !== 'playing'}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
-        >
-          Get Hint
-        </button>
+            <button
+              onClick={handleNewGame}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+            >
+              New Game
+            </button>
 
-        <button
-          onClick={handleNewGame}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-        >
-          New Game
-        </button>
+            <button
+              onClick={handleAbandon}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Abandon
+            </button>
+          </div>
+        </div>
 
-        <button
-          onClick={handleAbandon}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-        >
-          Abandon
-        </button>
+        {/* Right: Stats Panel */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 w-80 flex-shrink-0 flex flex-col">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Game Stats</h3>
+          
+          <div className="space-y-4">
+            {/* Incorrect Attempts */}
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Incorrect Attempts</p>
+              <p className="text-4xl font-bold text-red-600 dark:text-red-400">
+                {currentGame.incorrectAttempts}
+              </p>
+            </div>
+
+            {/* Hints Used */}
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Hints Used</p>
+              <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">
+                {currentGame.hintsUsed}
+              </p>
+            </div>
+
+            {/* Penalty Time */}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Penalty Time</p>
+              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 font-mono">
+                +{formatTime(currentGame.penaltyTime)}
+              </p>
+            </div>
+
+            {/* Total Time with Penalty */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Time</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+                {formatTime(currentGame.elapsedTime + currentGame.penaltyTime)}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Completion Modal */}
@@ -179,9 +199,9 @@ export default function GameContent() {
             </div>
 
             <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Solving Time</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Solving Time (with penalties)</p>
               <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">
-                {formatTime(currentGame.elapsedTime)}
+                {formatTime(currentGame.elapsedTime + currentGame.penaltyTime)}
               </p>
             </div>
 

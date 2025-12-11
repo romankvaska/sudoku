@@ -9,6 +9,7 @@ interface CellProps {
   onChange: (value: number) => void;
   row: number;
   col: number;
+  solution: number[][];
 }
 
 export default function Cell({
@@ -20,7 +21,9 @@ export default function Cell({
   onChange,
   row,
   col,
+  solution,
 }: CellProps) {
+  const isIncorrect = value !== 0 && !isClue && solution[row][col] !== value;
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const num = parseInt(e.key);
 
@@ -54,14 +57,16 @@ export default function Cell({
   return (
     <div
       className={`
-        w-12 h-12 flex items-center justify-center cursor-pointer
+        w-16 h-16 flex items-center justify-center cursor-pointer
         transition-colors duration-200
         ${borderClasses}
         ${isSelected
           ? 'bg-blue-500 dark:bg-blue-600'
-          : isRelated
-            ? 'bg-blue-100 dark:bg-blue-900'
-            : 'bg-white dark:bg-gray-800'
+          : isIncorrect
+            ? 'bg-red-200 dark:bg-red-900'
+            : isRelated
+              ? 'bg-blue-100 dark:bg-blue-900'
+              : 'bg-white dark:bg-gray-800'
         }
         ${isClue ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}
       `}
@@ -82,13 +87,15 @@ export default function Cell({
         onKeyDown={handleKeyDown}
         readOnly={isClue}
         className={`
-          w-full h-full text-center font-bold text-lg
+          w-full h-full text-center font-bold text-2xl
           bg-transparent border-none outline-none
           ${isSelected
             ? 'text-white dark:text-white'
-            : isClue
-              ? 'text-gray-900 dark:text-white'
-              : 'text-blue-600 dark:text-blue-400'
+            : isIncorrect
+              ? 'text-red-700 dark:text-red-300'
+              : isClue
+                ? 'text-gray-900 dark:text-white'
+                : 'text-blue-600 dark:text-blue-400'
           }
           ${isClue ? 'cursor-not-allowed' : ''}
         `}

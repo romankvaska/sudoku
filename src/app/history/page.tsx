@@ -153,41 +153,70 @@ export default function HistoryPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredGames.map(game => (
-              <div
-                key={game.id}
-                className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold capitalize ${
-                      game.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                      game.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                      game.difficulty === 'hard' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
-                      'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                    }`}>
-                      {game.difficulty}
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(game.createdAt).toLocaleDateString()} at {new Date(game.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Solved in <span className="font-semibold text-gray-900 dark:text-white">{formatTime(game.solveTime)}</span>
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleDeleteGame(game.id)}
-                    className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+          <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Time</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">Difficulty</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Total</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Errors</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Hints</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Penalties</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGames.map((game, index) => (
+                  <tr
+                    key={game.id}
+                    className={`border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                      index % 2 === 0 ? '' : 'bg-gray-50/50 dark:bg-gray-800/50'
+                    }`}
                   >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                      <div className="whitespace-nowrap">
+                        {new Date(game.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {new Date(game.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex px-2 py-1 rounded text-xs font-semibold capitalize ${
+                        game.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                        game.difficulty === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                        game.difficulty === 'hard' ? 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200' :
+                        'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                      }`}>
+                        {game.difficulty}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-mono font-semibold text-blue-600 dark:text-blue-400">
+                      {formatTime(game.solveTime)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-semibold text-red-600 dark:text-red-400">
+                      {game.incorrectAttempts ?? 0}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-semibold text-purple-600 dark:text-purple-400">
+                      {game.hintsUsed ?? 0}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center font-mono font-semibold text-yellow-600 dark:text-yellow-400">
+                      +{formatTime(game.penaltyTime ?? 0)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-center">
+                      <button
+                        onClick={() => handleDeleteGame(game.id)}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

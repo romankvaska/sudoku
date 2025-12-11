@@ -6,6 +6,7 @@ import Cell from './Cell';
 interface GameBoardProps {
   board: number[][];
   puzzle: number[][];
+  solution: number[][];
   selectedCell: { row: number; col: number } | null;
   onCellSelect: (row: number, col: number) => void;
   onCellChange: (row: number, col: number, value: number) => void;
@@ -14,6 +15,7 @@ interface GameBoardProps {
 export default function GameBoard({
   board,
   puzzle,
+  solution,
   selectedCell,
   onCellSelect,
   onCellChange,
@@ -69,6 +71,7 @@ export default function GameBoard({
                   onChange={(newValue) => onCellChange(rowIndex, colIndex, newValue)}
                   row={rowIndex}
                   col={colIndex}
+                  solution={solution}
                 />
               );
             })}

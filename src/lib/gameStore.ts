@@ -12,8 +12,6 @@ interface GameStore {
   resumeGame: (game: GameState) => void;
   setCell: (row: number, col: number, value: number) => void;
   clearCell: (row: number, col: number) => void;
-  pauseGame: () => void;
-  resumeFromPause: () => void;
   abandonGame: () => void;
   getHint: () => void;
   updateTimer: () => void;
@@ -39,6 +37,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       solved: false,
       createdAt: new Date(),
       updatedAt: new Date(),
+      incorrectAttempts: 0,
+      penaltyTime: 0,
+      hintsUsed: 0,
     };
 
     set({ currentGame: newGame });
@@ -77,6 +78,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Validate value
     if (value < 1 || value > 9) return;
 
+    // Check if the value is correct
+    const isCorrect = currentGame.solution[row][col] === value;
+
     const newBoard = currentGame.board.map(r => [...r]);
     newBoard[row][col] = value;
 
@@ -84,6 +88,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...currentGame,
       board: newBoard,
       updatedAt: new Date(),
+      incorrectAttempts: isCorrect ? currentGame.incorrectAttempts : currentGame.incorrectAttempts + 1,
+      penaltyTime: isCorrect ? currentGame.penaltyTime : currentGame.penaltyTime + 30,
     };
 
     set({ currentGame: updatedGame });
@@ -112,27 +118,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ currentGame: updatedGame });
   },
 
-  pauseGame: () => {
-    const { currentGame, timerInterval } = get();
-    if (!currentGame || !timerInterval) return;
 
-    clearInterval(timerInterval);
-    set({ currentGame: { ...currentGame, status: 'paused' } });
-    set({ timerInterval: null });
-  },
-
-  resumeFromPause: () => {
-    const { currentGame } = get();
-    if (!currentGame) return;
-
-    set({ currentGame: { ...currentGame, status: 'playing' } });
-
-    const interval = setInterval(() => {
-      get().updateTimer();
-    }, 1000);
-
-    set({ timerInterval: interval });
-  },
 
   abandonGame: () => {
     const { timerInterval } = get();
@@ -156,6 +142,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...currentGame,
       board: newBoard,
       updatedAt: new Date(),
+      hintsUsed: currentGame.hintsUsed + 1,
+      penaltyTime: currentGame.penaltyTime + 10,
     };
 
     set({ currentGame: updatedGame });
