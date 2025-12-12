@@ -36,6 +36,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <nav className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">Sudoku</h1>
           <div className="space-x-4 flex items-center">
+            {showInstallPrompt && (
+              <button
+                onClick={handleInstall}
+                className="text-green-300 hover:text-green-100 text-sm font-medium transition-colors cursor-pointer bg-transparent border-none"
+              >
+                Install App
+              </button>
+            )}
             <a href="/" className="text-blue-100 hover:text-white text-sm font-medium transition-colors">
               Play
             </a>
@@ -45,14 +53,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <a href="/tournaments" className="text-blue-100 hover:text-white text-sm font-medium transition-colors">
               Tournaments
             </a>
-            {showInstallPrompt && (
-              <button
-                onClick={handleInstall}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Download
-              </button>
-            )}
           </div>
         </nav>
       </header>
