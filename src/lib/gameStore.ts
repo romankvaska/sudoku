@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { GameState, GameStatus, Difficulty } from '@/types';
-import { SudokuSolver } from '@/lib/sudoku';
+import { gameService } from '@/lib/services';
 
 interface GameStore {
   // State
@@ -23,24 +23,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   timerInterval: null,
 
   startNewGame: (difficulty: Difficulty) => {
-    const puzzle = SudokuSolver.generatePuzzle(difficulty);
-
-    const newGame: GameState = {
-      id: Date.now().toString(),
-      board: puzzle.board,
-      solution: puzzle.solution,
-      puzzle: puzzle.puzzle,
-      difficulty,
-      status: 'playing',
-      startTime: Date.now(),
-      elapsedTime: 0,
-      solved: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      incorrectAttempts: 0,
-      penaltyTime: 0,
-      hintsUsed: 0,
-    };
+    const newGame = gameService.createNewGame(difficulty);
 
     set({ currentGame: newGame });
 
@@ -57,7 +40,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ currentGame: updatedGame });
 
     // Resume timer
-    const startTime = Date.now() - (game.elapsedTime * 1000);
     const interval = setInterval(() => {
       get().updateTimer();
     }, 1000);
@@ -69,27 +51,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentGame } = get();
     if (!currentGame) return;
 
-    // Don't allow changing original clues
-    if (currentGame.puzzle[row][col] !== 0) {
-      console.warn('Cannot modify original clue');
-      return;
-    }
-
-    // Validate value
-    if (value < 1 || value > 9) return;
-
-    // Check if the value is correct
-    const isCorrect = currentGame.solution[row][col] === value;
-
-    const newBoard = currentGame.board.map(r => [...r]);
-    newBoard[row][col] = value;
+    const result = gameService.setCell(currentGame, row, col, value);
+    if (!result) return;
 
     const updatedGame = {
       ...currentGame,
-      board: newBoard,
+      board: result.newBoard,
       updatedAt: new Date(),
-      incorrectAttempts: isCorrect ? currentGame.incorrectAttempts : currentGame.incorrectAttempts + 1,
-      penaltyTime: isCorrect ? currentGame.penaltyTime : currentGame.penaltyTime + 30,
+      incorrectAttempts: result.newIncorrectAttempts,
+      penaltyTime: result.newPenaltyTime,
     };
 
     set({ currentGame: updatedGame });
@@ -100,14 +70,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentGame } = get();
     if (!currentGame) return;
 
-    // Don't allow clearing original clues
-    if (currentGame.puzzle[row][col] !== 0) {
-      console.warn('Cannot clear original clue');
-      return;
-    }
-
-    const newBoard = currentGame.board.map(r => [...r]);
-    newBoard[row][col] = 0;
+    const newBoard = gameService.clearCell(currentGame, row, col);
+    if (!newBoard) return;
 
     const updatedGame = {
       ...currentGame,
@@ -117,8 +81,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({ currentGame: updatedGame });
   },
-
-
 
   abandonGame: () => {
     const { timerInterval } = get();
@@ -132,18 +94,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentGame } = get();
     if (!currentGame) return;
 
-    const hint = SudokuSolver.getHint(currentGame.puzzle, currentGame.board, currentGame.solution);
-    if (!hint) return;
-
-    const newBoard = currentGame.board.map(r => [...r]);
-    newBoard[hint.position.row][hint.position.col] = hint.value;
+    const result = gameService.getHint(currentGame);
+    if (!result) return;
 
     const updatedGame = {
       ...currentGame,
-      board: newBoard,
+      board: result.newBoard,
       updatedAt: new Date(),
-      hintsUsed: currentGame.hintsUsed + 1,
-      penaltyTime: currentGame.penaltyTime + 10,
+      hintsUsed: result.newHintsUsed,
+      penaltyTime: result.newPenaltyTime,
     };
 
     set({ currentGame: updatedGame });
@@ -167,7 +126,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { currentGame } = get();
     if (!currentGame) return;
 
-    const isSolved = SudokuSolver.isSolved(currentGame.board, currentGame.solution);
+    const isSolved = gameService.checkIsSolved(currentGame);
 
     if (isSolved) {
       const { timerInterval } = get();

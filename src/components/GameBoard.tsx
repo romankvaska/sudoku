@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import Cell from './Cell';
+import React, { useMemo, useRef, useCallback } from 'react';
+import Cell, { NavigationDirection } from './Cell';
 
 interface GameBoardProps {
   board: number[][];
@@ -20,6 +20,11 @@ export default function GameBoard({
   onCellSelect,
   onCellChange,
 }: GameBoardProps) {
+  // Create refs for all 81 cells
+  const cellRefs = useRef<(HTMLInputElement | null)[][]>(
+    Array(9).fill(null).map(() => Array(9).fill(null))
+  );
+
   // Calculate related cells (same row, column, and 3x3 box)
   const relatedCells = useMemo(() => {
     if (!selectedCell) return new Set();
@@ -49,6 +54,31 @@ export default function GameBoard({
     return related;
   }, [selectedCell]);
 
+  // Handle navigation between cells
+  const handleNavigate = useCallback((fromRow: number, fromCol: number, direction: NavigationDirection) => {
+    let newRow = fromRow;
+    let newCol = fromCol;
+
+    switch (direction) {
+      case 'up':
+        newRow = Math.max(0, fromRow - 1);
+        break;
+      case 'down':
+        newRow = Math.min(8, fromRow + 1);
+        break;
+      case 'left':
+        newCol = Math.max(0, fromCol - 1);
+        break;
+      case 'right':
+        newCol = Math.min(8, fromCol + 1);
+        break;
+    }
+
+    // Select the new cell and focus it
+    onCellSelect(newRow, newCol);
+    cellRefs.current[newRow][newCol]?.focus();
+  }, [onCellSelect]);
+
   return (
     <div className="flex justify-center">
       <div className="inline-block border-4 border-gray-900 dark:border-gray-100 bg-gray-900 dark:bg-gray-100 gap-0">
@@ -63,12 +93,14 @@ export default function GameBoard({
               return (
                 <Cell
                   key={cellKey}
+                  ref={(el) => { cellRefs.current[rowIndex][colIndex] = el; }}
                   value={value}
                   isClue={isClue}
                   isSelected={isSelected}
                   isRelated={isRelated && !isSelected}
                   onSelect={() => onCellSelect(rowIndex, colIndex)}
                   onChange={(newValue) => onCellChange(rowIndex, colIndex, newValue)}
+                  onNavigate={(direction) => handleNavigate(rowIndex, colIndex, direction)}
                   row={rowIndex}
                   col={colIndex}
                   solution={solution}

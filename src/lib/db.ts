@@ -1,15 +1,22 @@
 import Dexie, { Table } from 'dexie';
-import { GameHistory, Tournament, TournamentParticipant } from '@/types';
+import { GameHistory, GameState, Tournament, TournamentParticipant } from '@/types';
 
 export interface StoredGame extends GameHistory {
   boardState?: number[][];
   solutionState?: number[][];
 }
 
+export interface InProgressGame {
+  id: string;
+  gameState: GameState;
+  savedAt: Date;
+}
+
 export class SudokuDatabase extends Dexie {
   games!: Table<StoredGame>;
   tournaments!: Table<Tournament>;
   participants!: Table<TournamentParticipant>;
+  inProgressGames!: Table<InProgressGame>;
 
   constructor() {
     super('SudokuGameDB');
@@ -17,6 +24,12 @@ export class SudokuDatabase extends Dexie {
       games: '++id, difficulty, createdAt',
       tournaments: '++id, createdAt, status',
       participants: '++id, tournamentId, userId',
+    });
+    this.version(2).stores({
+      games: '++id, difficulty, createdAt',
+      tournaments: '++id, createdAt, status',
+      participants: '++id, tournamentId, userId',
+      inProgressGames: 'id, savedAt',
     });
   }
 }
@@ -195,8 +208,51 @@ export async function clearAllData(): Promise<void> {
     await db.games.clear();
     await db.tournaments.clear();
     await db.participants.clear();
+    await db.inProgressGames.clear();
   } catch (error) {
     console.error('Error clearing data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Save in-progress game (upsert - always uses same ID for single active game)
+ */
+export async function saveInProgressGame(gameState: GameState): Promise<void> {
+  try {
+    const inProgressGame: InProgressGame = {
+      id: 'current', // Single in-progress game at a time
+      gameState,
+      savedAt: new Date(),
+    };
+    await db.inProgressGames.put(inProgressGame);
+  } catch (error) {
+    console.error('Error saving in-progress game:', error);
+    throw error;
+  }
+}
+
+/**
+ * Load in-progress game
+ */
+export async function loadInProgressGame(): Promise<InProgressGame | null> {
+  try {
+    const game = await db.inProgressGames.get('current');
+    return game || null;
+  } catch (error) {
+    console.error('Error loading in-progress game:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear in-progress game
+ */
+export async function clearInProgressGame(): Promise<void> {
+  try {
+    await db.inProgressGames.delete('current');
+  } catch (error) {
+    console.error('Error clearing in-progress game:', error);
     throw error;
   }
 }
